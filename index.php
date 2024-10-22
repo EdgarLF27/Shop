@@ -10,7 +10,7 @@
 
 <body>
     <?php
-
+require "db/connection.php";
     ?>
 </body>
 
