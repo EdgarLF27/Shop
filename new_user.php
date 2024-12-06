@@ -11,20 +11,17 @@
     <body>
     </body>
     <form action="new_user.php" method="POST">
-        <label for="name">¿Cuál es tu nombre?</label>
-        <input type="text" name="name" id="name" required>
+        <input type="text" name="name" id="name" placeholder="Escribe tu nombre" required>
         <br><br>
-        <label for="last_names">¿Cuáles son tus apellidos?</label>
-        <input type="text" name="last_names" id="last_names" required>
+        <input type="text" name="last_names" id="last_names" placeholder="Escribe tus apellidos" required>
         <br><br>
-        <label for="username">¿Cuál es tu nombre de usuario?</label>
-        <input type="text" name="user_name" id="user_name" required>
+        <input type="text" name="user_name" id="user_name" placeholder="¿Cuál será tu nombre de usuario?" required>
         <br><br>
-        <label for="password">¿Cuál es tu contraseña?</label>
-        <input type="password" name="password" id="password" required>
+        <input type="password" name="password" id="password" placeholder="¿Cuál será tu contraseña?" required>
         <br><br>
-        <label for="email">¿Cuál es tu correo?</label>
-        <input type="email" name="email" id="email" required>
+        <input type="email" name="email" id="email" placeholder="Escribe tu correo" required>
+        <br><br>
+        <input type="number" name="number_phone" id="number_phone" placeholder="Escribe tu número de teléfono" required>
         <br><br>
         <input type="submit" value="Registrarse">
     </form>
@@ -40,12 +37,12 @@
         $user_name = $_POST["user_name"];
         $password = $_POST["password"];
         $email = $_POST["email"];
-        
-        $sql = "INSERT INTO users (name, last_names, user_name, password, email) VALUES (?, ?, ?, ?, ?)";
+        $number_phone = $_POST["number_phone"];
+
+        $sql = "INSERT INTO users (name, last_names, user_name, password, email, number_phone) VALUES (?, ?, ?, ?, ?,?)";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("sssss", $name, $last_names, $username, $password, $email);
-        $stmt -> execute();
+        $stmt->bind_param("sssssi", $name, $last_names, $user_name, $password, $email, $number_phone);
+        $stmt->execute();
         echo "Registro exitoso ";
     }
     ?>
-    asdlkajslkjfd
