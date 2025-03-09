@@ -1,3 +1,37 @@
+<?php
+require "db/connection.php";
+session_start();
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $user_name = $_POST['user_name'];
+    $password = $_POST['password'];
+    $role = $_POST['role'];
+
+    $sql = "SELECT * FROM users WHERE user_name = ? AND role = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("ss", $user_name, $role);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $user = $result->fetch_assoc();
+
+
+    if ($user && $password === $user['password']) {
+        $_SESSION['user_name'] = $user_name;
+        $_SESSION['role'] = $user['role'];
+        if ($user['role'] == 'Dueño') {
+            header("Location: manage_products.php");
+        } else if ($user['role'] == 'Usuario') {
+            header("Location: index.php");
+        }
+        exit();
+    } else {
+        echo "Nombre de usuario, contraseña o rol incorrectos";
+    }
+
+    $stmt->close();
+    $conn->close();
+}
+?>
 <!DOCTYPE html>
 <html lang="es">
 
@@ -25,48 +59,3 @@
 </body>
 
 </html>
-
-<?php
-require "db/connection.php";
-session_start();
-
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $user_name = $_POST['user_name'];
-    $password = $_POST['password'];
-    $role = $_POST['role'];
-
-    // Añadir mensajes de depuración
-    echo "Usuario: $user_name<br>";
-    echo "Rol: $role<br>";
-
-    $sql = "SELECT * FROM users WHERE user_name = ? AND role = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ss", $user_name, $role);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $user = $result->fetch_assoc();
-
-    // Añadir mensajes de depuración
-    if ($user) {
-        echo "Usuario encontrado: " . htmlspecialchars($user['user_name']) . "<br>";
-    } else {
-        echo "Usuario no encontrado<br>";
-    }
-
-    if ($user && password_verify($password, $user['password'])) {
-        $_SESSION['user_name'] = $user_name;
-        $_SESSION['role'] = $user['role'];
-        if ($user['role'] == 'Dueño') {
-            header("Location: manage_products.php");
-        } else if ($user['role'] == 'Usuario') {
-            header("Location: index.php");
-        }
-        exit();
-    } else {
-        echo "Nombre de usuario, contraseña o rol incorrectos";
-    }
-
-    $stmt->close();
-    $conn->close();
-}
-?>
