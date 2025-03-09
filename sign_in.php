@@ -14,8 +14,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $result = $stmt->get_result();
     $user = $result->fetch_assoc();
 
-
     if ($user && $password === $user['password']) {
+        $_SESSION['user_id'] = $user['id']; // Almacenar el user_id en la sesión
         $_SESSION['user_name'] = $user_name;
         $_SESSION['role'] = $user['role'];
         if ($user['role'] == 'Dueño') {
