@@ -3,8 +3,8 @@
 header('Content-Type: application/json');
 
 // Credenciales de la API de PayPal
-$paypalClientId = getenv('PAYPAL_CLIENT_ID'); 
-$paypalSecret = getenv('PAYPAL_SECRET');
+$clientID = getenv('PAYPAL_CLIENT_ID');
+$secret = getenv('PAYPAL_SECRET');
 $api_url = "https://api-m.sandbox.paypal.com";
 
 // Codifica las credenciales en base64 para la autenticación
@@ -43,7 +43,11 @@ $orderData = [
             "currency_code" => "USD",
             "value" => $precio
         ]
-    ]]
+    ]],
+    "application_context" => [
+        "return_url" => "http://localhost/Shop/paypal_success.php",
+        "cancel_url" => "http://localhost/Shop/paypal_cancel.php"
+    ]
 ];
 
 // Crear la orden de pago
