@@ -20,6 +20,12 @@ $stmt->execute();
 $result = $stmt->get_result();
 $cart_items = $result->fetch_all(MYSQLI_ASSOC);
 
+// Calcular el total del carrito
+$total = 0;
+foreach ($cart_items as $item) {
+    $total += $item['price'] * $item['quantity'];
+}
+
 // Función para actualizar la cantidad de un producto en el carrito
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'update_quantity') {
     $cart_id = $_POST['cart_id'];
@@ -55,6 +61,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Carrito de Compras</title>
+    <script src="https://www.paypal.com/sdk/js?client-id=AS6rJyOko1SalrUe7SJ5UesRC6_9Q0BQhNnxufdwLXLedOdnMUqTSQ0DfqB9l6ZCuK5DMhuBskW28Zet&currency=USD"></script>
 </head>
 
 <body>
@@ -94,7 +101,43 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
         <?php endforeach; ?>
     </table>
     <br>
-    <a href="checkout.php">Proceder al Pago</a>
+    <h2>Total: $<?php echo number_format($total, 2); ?></h2>
+    <div id="paypal-button-container"></div>
+
+    <script>
+        paypal.Buttons({
+            createOrder: function(data, actions) {
+                return fetch('make_order.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        precio: <?php echo $total; ?> // Total del carrito
+                    })
+                }).then(response => response.json())
+                  .then(order => order.id);
+            },
+            onApprove: function(data, actions) {
+                return fetch('pay_capture.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        orderID: data.orderID
+                    })
+                }).then(response => response.json())
+                  .then(details => {
+                      alert('Pago completado por ' + details.payer.name.given_name);
+                      window.location.href = 'paypal_success.php?token=' + data.orderID;
+                  });
+            },
+            onCancel: function(data) {
+                window.location.href = 'paypal_cancel.php';
+            }
+        }).render('#paypal-button-container');
+    </script>
 </body>
 
 </html>

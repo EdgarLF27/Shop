@@ -15,7 +15,7 @@
       paypal
         .Buttons({
           createOrder: function (data, actions) {
-            return fetch("crear_orden.php", {
+            return fetch("make_order.php", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -28,7 +28,7 @@
               .then((order) => order.id);
           },
           onApprove: function (data, actions) {
-            return fetch("capturar_pago.php", {
+            return fetch("pay_capture.php", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
