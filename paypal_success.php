@@ -23,7 +23,7 @@ $secret = getenv('PAYPAL_SECRET');
 $api_url = "https://api-m.sandbox.paypal.com";
 $auth = base64_encode("$clientID:$secret");
 
-$ch = curl_init();
+$ch = curl_init(); //Inicia una sesion cURL
 curl_setopt($ch, CURLOPT_URL, "$api_url/v1/oauth2/token");
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
     "Authorization: Basic $auth",
@@ -53,29 +53,34 @@ curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 $response = json_decode(curl_exec($ch), true);
 curl_close($ch);
 
-if ($response['status'] == "COMPLETED") {
-    // Actualizar el estado del pedido en la base de datos
-    $sql = "UPDATE orders SET status = 'paid' WHERE user_id = ? AND order_id = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("is", $user_id, $orderID);
-    $stmt->execute();
+if (isset($response['status']) && $response['status'] == "COMPLETED") {
+    // Calcular el total del carrito
+    $total = 0;
+    foreach ($_SESSION['cart'] as $item) {
+        $total += $item['price'] * $item['quantity'];
+    }
 
-    // Mostrar un mensaje de confirmación al usuario
-    ?>
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Pago Exitoso</title>
-    </head>
-    <body>
-        <h1>Pago realizado con éxito</h1>
-        <p>Gracias por tu compra. Tu pago ha sido procesado correctamente.</p>
-        <a href="index.php">Volver a la tienda</a>
-    </body>
-    </html>
-    <?php
+    // Insertar el pedido en la tabla `orders`
+    $sql = "INSERT INTO orders (user_id, total, status) VALUES (?, ?, 'Completado')";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("id", $user_id, $total);
+    $stmt->execute();
+    $order_id = $stmt->insert_id; // Obtener el ID del pedido recién creado
+
+    // Insertar los productos del pedido en la tabla `order_items`
+    foreach ($_SESSION['cart'] as $item) {
+        $sql = "INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("iiid", $order_id, $item['id'], $item['quantity'], $item['price']);
+        $stmt->execute();
+    }
+
+    // Limpiar el carrito
+    unset($_SESSION['cart']);
+
+    // Redirigir al usuario a la página de confirmación
+    header("Location: order_confirmation.php?order_id=$order_id");
+    exit();
 } else {
     echo "Error al capturar el pago: " . json_encode($response);
 }
