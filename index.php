@@ -45,6 +45,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     <h1>Bienvenido, <?php echo htmlspecialchars($_SESSION['user_name']); ?>!</h1>
     <a href="logout.php">Cerrar sesión</a>
     <a href="cart.php" style="float: right;">Ver Carrito</a>
+    <a href="order_history.php">Mis Pedidos</a>
 
     <h1>Tienda</h1>
 

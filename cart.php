@@ -9,22 +9,26 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
+// Función para obtener los productos del carrito
+function getCartItems($conn, $user_id) {
+    $sql = "SELECT cart.id, products.name, products.description, products.price, cart.quantity, products.image 
+            FROM cart 
+            JOIN products ON cart.product_id = products.id 
+            WHERE cart.user_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    return $result->fetch_all(MYSQLI_ASSOC);
+}
+
 // Obtener los productos del carrito
-$sql = "SELECT cart.id, products.name, products.description, products.price, cart.quantity, products.image 
-        FROM cart 
-        JOIN products ON cart.product_id = products.id 
-        WHERE cart.user_id = ?";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
-$cart_items = $result->fetch_all(MYSQLI_ASSOC);
+$cart_items = getCartItems($conn, $user_id);
 
 // Calcular el total del carrito
-$total = 0;
-foreach ($cart_items as $item) {
-    $total += $item['price'] * $item['quantity'];
-}
+$total = array_reduce($cart_items, function ($carry, $item) {
+    return $carry + ($item['price'] * $item['quantity']);
+}, 0);
 
 // Función para actualizar la cantidad de un producto en el carrito
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'update_quantity') {
@@ -52,6 +56,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     header("Location: cart.php");
     exit();
 }
+
+// Guardar los productos del carrito en la sesión
+$_SESSION['cart'] = array_map(function ($item) {
+    return [
+        'id' => $item['id'], // ID del producto
+        'quantity' => $item['quantity'], // Cantidad
+        'price' => $item['price'] // Precio unitario
+    ];
+}, $cart_items);
 ?>
 
 <!DOCTYPE html>
@@ -61,7 +74,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Carrito de Compras</title>
-    <script src="https://www.paypal.com/sdk/js?client-id=AS6rJyOko1SalrUe7SJ5UesRC6_9Q0BQhNnxufdwLXLedOdnMUqTSQ0DfqB9l6ZCuK5DMhuBskW28Zet&currency=USD"></script>
+    <script src="https://www.paypal.com/sdk/js?client-id=AS6rJyOko1SalrUe7SJ5UesRC6_9Q0BQhNnxufdwLXLedOdnMUqTSQ0DfqB9l6ZCuK5DMhuBskW28Zet&currency=MXN"></script>
 </head>
 
 <body>
@@ -105,38 +118,48 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     <div id="paypal-button-container"></div>
 
     <script>
-        paypal.Buttons({
-            createOrder: function(data, actions) {
-                return fetch('make_order.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        precio: <?php echo $total; ?> // Total del carrito
-                    })
-                }).then(response => response.json())
-                  .then(order => order.id);
+     paypal.Buttons({
+    createOrder: function(data, actions) {
+        return fetch('make_order.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
             },
-            onApprove: function(data, actions) {
-                return fetch('pay_capture.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        orderID: data.orderID
-                    })
-                }).then(response => response.json())
-                  .then(details => {
-                      alert('Pago completado por ' + details.payer.name.given_name);
-                      window.location.href = 'paypal_success.php?token=' + data.orderID;
-                  });
-            },
-            onCancel: function(data) {
-                window.location.href = 'paypal_cancel.php';
+            body: JSON.stringify({
+                precio: <?php echo $total; ?> // Total del carrito
+            })
+        }).then(response => {
+            if (!response.ok) {
+                throw new Error('Error al crear la orden');
             }
-        }).render('#paypal-button-container');
+            return response.json();
+        }).then(order => {
+            if (order.error) {
+                alert('Error: ' + order.error);
+                throw new Error(order.error);
+            }
+            return order.id;
+        });
+    },
+    onApprove: function(data, actions) {
+        return fetch('pay_capture.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                orderID: data.orderID
+            })
+        }).then(response => response.json())
+          .then(details => {
+              alert('Pago completado por ' + details.payer.name.given_name);
+              window.location.href = 'paypal_success.php?token=' + data.orderID;
+          });
+    },
+    onCancel: function(data) {
+        window.location.href = 'paypal_cancel.php';
+    }
+}).render('#paypal-button-container');
     </script>
 </body>
 

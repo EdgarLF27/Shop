@@ -20,33 +20,43 @@ $orders = $result->fetch_all(MYSQLI_ASSOC);
 
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Historial de Pedidos</title>
 </head>
+
 <body>
     <h1>Historial de Pedidos</h1>
     <a href="index.php">Volver a la Tienda</a>
-    <table border="1">
-        <tr>
-            <th>ID del Pedido</th>
-            <th>Total</th>
-            <th>Estado</th>
-            <th>Fecha</th>
-            <th>Acciones</th>
-        </tr>
-        <?php foreach ($orders as $order): ?>
-        <tr>
-            <td><?php echo $order['id']; ?></td>
-            <td>$<?php echo number_format($order['total'], 2); ?></td>
-            <td><?php echo $order['status']; ?></td>
-            <td><?php echo $order['created_at']; ?></td>
-            <td>
-                <a href="order_confirmation.php?order_id=<?php echo $order['id']; ?>">Ver Detalles</a>
-            </td>
-        </tr>
-        <?php endforeach; ?>
-    </table>
+
+    <!-- Muestra la tabla de pedidos (si hay pedidos ejecuta el codigo) -->
+    <?php if (count($orders) > 0): ?>
+        <table border="1">
+            <tr>
+                <th>ID del Pedido</th>
+                <th>Total</th>
+                <th>Estado</th>
+                <th>Fecha</th>
+                <th>Acciones</th>
+            </tr>
+            <!-- Recorre los pedidos y muestra la información en la tabla ( por cada iteracion correcta se almacena la info
+            en la variable order y genera un bloque de codigo para esta) -->
+            <?php foreach ($orders as $order): ?>
+            <tr>
+                <td><?php echo $order['id']; ?></td>
+                <td>$<?php echo number_format($order['total'], 2); ?></td>
+                <td><?php echo $order['status']; ?></td>
+                <td><?php echo $order['created_at']; ?></td>
+                <td>
+                    <a href="order_confirmation.php?order_id=<?php echo $order['id']; ?>">Ver Detalles</a>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+        </table>
+    <?php else: ?>
+        <p>No tienes pedidos aún.</p>
+    <?php endif; ?>
 </body>
 </html>
